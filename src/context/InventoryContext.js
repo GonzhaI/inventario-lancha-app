@@ -111,11 +111,66 @@ export const InventoryProvider = ({ children }) => {
     await AsyncStorage.setItem("reportes", JSON.stringify(reportesActualizados));
   };
 
+  // ACCIONES: Editar un ítem dentro de un reporte específico
+  const editarItem = async (reporteId, nombreSeccion, index, nuevoItem) => {
+    const reportesActualizados = reportes.map((rep) => {
+      if (rep.id === reporteId) {
+        const nuevosDatos = { ...rep.datos };
+        // Actualizar el ítem en la posición específica
+        nuevosDatos[nombreSeccion][index] = {
+          nombre: nuevoItem.nombre,
+          cantidad: parseInt(nuevoItem.cantidad) || 0,
+        };
+        return { ...rep, datos: nuevosDatos };
+      }
+      return rep;
+    });
+
+    setReportes(reportesActualizados);
+    await AsyncStorage.setItem("reportes", JSON.stringify(reportesActualizados));
+
+    // Actualizar maetros si el nombre cambió
+    await actualizarMaestros("item", nuevoItem.nombre);
+  };
+
+  // ACCIONES: Eliminar un ítem dentro de un reporte específico
+  const eliminarItem = async (reporteId, nombreSeccion, index) => {
+    const reportesActualizados = reportes.map((rep) => {
+      if (rep.id === reporteId) {
+        const nuevosDatos = { ...rep.datos };
+        // Filtro para eliminar por índice
+        nuevosDatos[nombreSeccion] = nuevosDatos[nombreSeccion].filter((_, i) => i !== index);
+
+        // Si la sección queda vacía, se puede eliminar la sección
+        if (nuevosDatos[nombreSeccion].length === 0) {
+          delete nuevosDatos[nombreSeccion];
+        }
+
+        return { ...rep, datos: nuevosDatos };
+      }
+      return rep;
+    });
+    setReportes(reportesActualizados);
+    await AsyncStorage.setItem("reportes", JSON.stringify(reportesActualizados));
+  };
+
   // ACCIONES: Eliminar un reporte (por si se equivoca)
   const eliminarReporte = async (id) => {
     const filtrados = reportes.filter((r) => r.id !== id);
     setReportes(filtrados);
     await AsyncStorage.setItem("reportes", JSON.stringify(filtrados));
+  };
+
+  const eliminarSugerenciaItem = async (valor) => {
+    const nuevoArray = masterItems.filter((i) => i !== valor);
+    setMasterItems(nuevoArray);
+    await AsyncStorage.setItem("masterItems", JSON.stringify(nuevoArray));
+  };
+
+  const eliminarSugerenciaSeccion = async (valor) => {
+    const nuevoArray = masterSecciones.filter((s) => s !== valor);
+    setMasterSecciones(nuevoArray);
+    await AsyncStorage.setItem("masterSecciones", JSON.stringify(nuevoArray));
   };
 
   return (
@@ -127,7 +182,11 @@ export const InventoryProvider = ({ children }) => {
         masterItems,
         crearReporte,
         agregarItem,
+        editarItem,
+        eliminarItem,
         eliminarReporte,
+        eliminarSugerenciaItem,
+        eliminarSugerenciaSeccion,
       }}
     >
       {children}

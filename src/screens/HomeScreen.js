@@ -1,8 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useInventory } from "../context/InventoryContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const HomeScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { reportes } = useInventory();
 
   // Función para renderizar cada tarjeta de lancha
@@ -24,7 +26,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom, paddingRigh: insets.right }]}>
       {reportes.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>No hay inspecciones recientes.</Text>

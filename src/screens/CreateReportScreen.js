@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from "react-native";
 import { useInventory } from "../context/InventoryContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CreateReportScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [nombreLancha, setNombreLancha] = useState("");
   const { crearReporte, masterLanchas } = useInventory();
 
@@ -20,7 +22,7 @@ const CreateReportScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom, paddingRigh: insets.right }]}>
       <Text style={styles.label}>Nombre de la Lancha:</Text>
 
       <TextInput

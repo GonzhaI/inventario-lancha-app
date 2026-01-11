@@ -12,15 +12,25 @@ import {
   Platform,
 } from "react-native";
 import { useInventory } from "../context/InventoryContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AddItemScreen = ({ route, navigation }) => {
-  const { reportId } = route.params; // Necesitamos saber a qué reporte agregarle cosas
-  const { agregarItem, masterSecciones, masterItems } = useInventory();
+  const insets = useSafeAreaInsets();
+  const { reportId, itemEdit, seccionEdit, indexEdit } = route.params || {}; // Necesitamos saber a qué reporte agregarle cosas
+  const {
+    agregarItem,
+    editarItem,
+    masterSecciones,
+    masterItems,
+    eliminarSugerenciaSeccion,
+    eliminarSugerenciaItem,
+    reportes,
+  } = useInventory();
 
-  // Estados del formulario
-  const [seccion, setSeccion] = useState("");
-  const [nombreItem, setNombreItem] = useState("");
-  const [cantidad, setCantidad] = useState("");
+  // Estados del formulario, si hay datos de edición, se usan como estado inicial
+  const [seccion, setSeccion] = useState(seccionEdit || "");
+  const [nombreItem, setNombreItem] = useState(itemEdit ? itemEdit.nombre : "");
+  const [cantidad, setCantidad] = useState(itemEdit ? itemEdit.cantidad.toString() : "");
 
   const handleGuardar = async () => {
     if (!seccion.trim() || !nombreItem.trim() || !cantidad.trim()) {
@@ -28,39 +38,61 @@ const AddItemScreen = ({ route, navigation }) => {
       return;
     }
 
-    await agregarItem(reportId, seccion, nombreItem, cantidad);
+    if (itemEdit !== undefined) {
+      // Modo edición
+      await editarItem(reportId, seccion, indexEdit, { nombre: nombreItem, cantidad });
+      Alert.alert("Actualizado", "Ítem modificado correctamente");
+      navigation.goBack();
+    } else {
+      await agregarItem(reportId, seccion, nombreItem, cantidad);
 
-    // Limpiamos los campos de ítem y cantidad para agregar otro rápido en la misma sección
-    setNombreItem("");
-    setCantidad("");
-    Alert.alert("Guardado", "Ítem agregado correctamente. Puedes agregar otro.", [{ text: "OK" }]);
-    // O si prefieres que se salga al guardar, usa: navigation.goBack();
+      // Limpiamos los campos de ítem y cantidad para agregar otro rápido en la misma sección
+      setNombreItem("");
+      setCantidad("");
+      Alert.alert("Guardado", "Ítem agregado correctamente. Puedes agregar otro.", [{ text: "OK" }]);
+      // O si prefieres que se salga al guardar, usa: navigation.goBack();
+    }
   };
 
   // Componente visual para las "Chips" de sugerencia
-  const SuggestionList = ({ data, onSelect }) => (
+  const SuggestionList = ({ data, onSelect, onDelete }) => (
     <FlatList
       data={data}
       horizontal
       showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="always"
       keyExtractor={(item) => item}
       style={styles.suggestionList}
       renderItem={({ item }) => (
-        <TouchableOpacity style={styles.chip} onPress={() => onSelect(item)}>
-          <Text style={styles.chipText}>{item}</Text>
-        </TouchableOpacity>
+        <View style={styles.chipContainer}>
+          <TouchableOpacity style={styles.chip} onPress={() => onSelect(item)}>
+            <Text style={styles.chipText}>{item}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteChip} onPress={() => onDelete(item)}>
+            <Text style={styles.deleteChipText}>×</Text>
+          </TouchableOpacity>
+        </View>
       )}
     />
   );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={[
+        styles.container,
+        {
+          paddingBottom: insets.bottom,
+          paddingRight: insets.right,
+        },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* 1. SELECCIÓN DE SECCIÓN */}
         <Text style={styles.label}>Sección / Ubicación:</Text>
         <TextInput style={styles.input} placeholder="Ej. Proa, Cabina..." value={seccion} onChangeText={setSeccion} />
-        {masterSecciones.length > 0 && <SuggestionList data={masterSecciones} onSelect={setSeccion} />}
+        {masterSecciones.length > 0 && (
+          <SuggestionList data={masterSecciones} onSelect={setSeccion} onDelete={eliminarSugerenciaSeccion} />
+        )}
 
         {/* 2. NOMBRE DEL ÍTEM */}
         <Text style={styles.label}>Nombre del Producto:</Text>
@@ -70,7 +102,9 @@ const AddItemScreen = ({ route, navigation }) => {
           value={nombreItem}
           onChangeText={setNombreItem}
         />
-        {masterItems.length > 0 && <SuggestionList data={masterItems} onSelect={setNombreItem} />}
+        {masterItems.length > 0 && (
+          <SuggestionList data={masterItems} onSelect={setNombreItem} onDelete={eliminarSugerenciaItem} />
+        )}
 
         {/* 3. CANTIDAD */}
         <Text style={styles.label}>Cantidad:</Text>
@@ -93,6 +127,23 @@ const AddItemScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  chipContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 10,
+    backgroundColor: "#e8f5e9",
+    borderRadius: 16,
+    paddingLeft: 4,
+  },
+  deleteChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  deleteChipText: {
+    color: "#c62828",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",

@@ -21,8 +21,8 @@ export const exportToPDF = async (reporte) => {
             <h1>Reporte de Inventario</h1>
             <h2>Lancha: ${reporte.nombreLancha}</h2>
             <p>Fecha: ${new Date(reporte.fecha).toLocaleDateString()} - ${new Date(
-      reporte.fecha
-    ).toLocaleTimeString()}</p>
+              reporte.fecha,
+            ).toLocaleTimeString()}</p>
           </div>
     `;
 
